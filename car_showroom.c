@@ -141,7 +141,7 @@ void displayAllCars(PGconn* conn) {
     PQclear(res);
 }
 
-void displayCarByCriteria(PGconn* conn) {
+void displayCarByCriteria(PGconn* conn, const char* criteria, const char* value) {
     int criteria_choice;
     char query[512];
     PGresult* res;
