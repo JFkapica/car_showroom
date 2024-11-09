@@ -55,11 +55,7 @@ int main() {
                 break;
 
             case 3:
-                printf("Enter search criteria (car_id/brand): ");
-                scanf("%s", criteria);
-                printf("Enter value: ");
-                scanf("%s", value);
-                displayCarByCriteria(conn, criteria, value);
+                displayCarByCriteria(conn);
                 break;
 
             case 4:
@@ -141,7 +137,7 @@ void displayAllCars(PGconn* conn) {
     PQclear(res);
 }
 
-void displayCarByCriteria(PGconn* conn, const char* criteria, const char* value) {
+void displayCarByCriteria(PGconn* conn) {
     int criteria_choice;
     char query[512];
     PGresult* res;
