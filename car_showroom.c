@@ -54,7 +54,7 @@ int main() {
                 scanf(" %29[^\n]", color);
                 printf("Enter Year of Production: ");
                 scanf("%d", &year_of_production);
-                if (!isValidYear(year_of_production)) {
+                if (!isValidYear(year_of_production) or typeof(year_of_production) != int) {
                     printf("Invalid year of production. Please enter a year between 1886 and the current year.\n");
                     break;
                 }
