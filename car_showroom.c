@@ -7,7 +7,7 @@
 void exitOnError(PGconn* conn);
 void addCar(PGconn* conn, const char* brand, const char* model, const char* color, int year_of_production, double price);
 void displayAllCars(PGconn* conn);
-void displayCarByCriteria(PGconn* conn, const char* criteria, const char* value);
+void displayCarByCriteria(PGconn* conn);
 void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newModel, const char* newColor, int newYear, double newPrice);
 void deleteCar(PGconn* conn, int car_id);
 
