@@ -59,7 +59,11 @@ int main() {
                     break;
                 }
                 printf("Enter Price: ");
-                scanf("%lf", &price);
+                if (scanf("%lf", &price) != 1) {
+                    printf("Invalid price. Please enter a valid number.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
                 addCar(conn, brand, model, color, year_of_production, price);
                 break;
 
@@ -189,9 +193,17 @@ void displayCarByCriteria(PGconn* conn) {
         case 5: {
             int year_start, year_end;
             printf("Enter start year: ");
-            scanf("%d", &year_start);
+            if (scanf("%d", &year_start) != 1 || !isValidYear(year_start)) {
+                printf("Invalid year of production. Please enter a valid integer year between 1886 and the current year.\n");
+                while (getchar() != '\n');
+                return;
+            }
             printf("Enter end year: ");
-            scanf("%d", &year_end);
+            if (scanf("%d", &year_end) != 1 || !isValidYear(year_end)) {
+                printf("Invalid year of production. Please enter a valid integer year between 1886 and the current year.\n");
+                while (getchar() != '\n');
+                return;
+            }
             snprintf(query, sizeof(query), 
                      "SELECT * FROM cars WHERE year_of_production BETWEEN %d AND %d;", 
                      year_start, year_end);
@@ -200,9 +212,17 @@ void displayCarByCriteria(PGconn* conn) {
         case 6: {
             double price_min, price_max;
             printf("Enter minimum price: ");
-            scanf("%lf", &price_min);
+            if (scanf("%lf", &price_min) != 1) {
+                printf("Invalid minimum price. Please enter a valid number.\n");
+                while (getchar() != '\n');
+                break;
+            }
             printf("Enter maximum price: ");
-            scanf("%lf", &price_max);
+            if (scanf("%lf", &price_max) != 1) {
+                printf("Invalid maximum price. Please enter a valid number.\n");
+                while (getchar() != '\n');
+                break;
+            }
             snprintf(query, sizeof(query), 
                      "SELECT * FROM cars WHERE price BETWEEN %.2f AND %.2f;", 
                      price_min, price_max);
@@ -270,12 +290,20 @@ void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newMo
             break;
         case 4:
             printf("Enter New Year of Production: ");
-            scanf("%d", &newYear);
+            if (scanf("%d", &newYear) != 1 || !isValidYear(newYear)) {
+                printf("Invalid year of production. Please enter a valid integer year between 1886 and the current year.\n");
+                while (getchar() != '\n');
+                return;
+            }
             snprintf(query, sizeof(query), "UPDATE cars SET year_of_production=%d WHERE car_id=%d;", newYear, car_id);
             break;
         case 5:
             printf("Enter New Price: ");
-            scanf("%lf", &newPrice);
+            if (scanf("%lf", &newPrice) != 1) {
+                printf("Invalid price. Please enter a valid number.\n");
+                while (getchar() != '\n');
+                return;
+            }
             snprintf(query, sizeof(query), "UPDATE cars SET price=%.2f WHERE car_id=%d;", newPrice, car_id);
             break;
         case 6:
@@ -286,9 +314,17 @@ void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newMo
             printf("Enter New Color: ");
             scanf(" %29[^\n]", newColor);
             printf("Enter New Year of Production: ");
-            scanf("%d", &newYear);
+            if (scanf("%d", &newYear) != 1 || !isValidYear(newYear)) {
+                printf("Invalid year of production. Please enter a valid integer year between 1886 and the current year.\n");
+                while (getchar() != '\n');
+                return;
+            }
             printf("Enter New Price: ");
-            scanf("%lf", &newPrice);
+            if (scanf("%lf", &newPrice) != 1) {
+                printf("Invalid price. Please enter a valid number.\n");
+                while (getchar() != '\n');
+                return;
+            }
             snprintf(query, sizeof(query),
                      "UPDATE cars SET brand='%s', model='%s', color='%s', year_of_production=%d, price=%.2f WHERE car_id=%d;",
                      newBrand, newModel, newColor, newYear, newPrice, car_id);
