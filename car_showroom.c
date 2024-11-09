@@ -13,7 +13,7 @@ void deleteCar(PGconn* conn, int car_id);
 
 int main() {
     // Połączenie z bazą danych
-    PGconn* conn = PQconnectdb("user=your_username dbname=your_database password=your_password host=localhost");
+    PGconn* conn = PQconnectdb("user=dbuser dbname=dbuser password=dbuser");
 
     if (PQstatus(conn) != CONNECTION_OK) {
         exitOnError(conn);
@@ -31,7 +31,7 @@ int main() {
         printf("3. Display Car by Criteria (Car ID or Brand)\n");
         printf("4. Modify Car\n");
         printf("5. Delete Car\n");
-        printf("6. Exit\n");
+        printf("0. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -84,7 +84,7 @@ int main() {
                 deleteCar(conn, car_id);
                 break;
 
-            case 6:
+            case 0:
                 PQfinish(conn);
                 printf("Exiting program.\n");
                 return 0;
@@ -141,30 +141,96 @@ void displayAllCars(PGconn* conn) {
     PQclear(res);
 }
 
-void displayCarByCriteria(PGconn* conn, const char* criteria, const char* value) {
+void displayCarByCriteria(PGconn* conn) {
+    int criteria_choice;
     char query[512];
+    PGresult* res;
 
-    if (strcmp(criteria, "car_id") == 0) {
-        snprintf(query, sizeof(query), "SELECT car_id, brand, model, color, year_of_production, price FROM cars WHERE car_id = %s;", value);
-    } else if (strcmp(criteria, "brand") == 0) {
-        snprintf(query, sizeof(query), "SELECT car_id, brand, model, color, year_of_production, price FROM cars WHERE brand = '%s';", value);
-    } else {
-        printf("Invalid criteria. Use 'car_id' or 'brand'.\n");
-        return;
+    printf("\nSelect search criteria:\n");
+    printf("1. Search by Car ID\n");
+    printf("2. Search by Brand\n");
+    printf("3. Search by Model\n");
+    printf("4. Search by Color\n");
+    printf("5. Search by Year Range\n");
+    printf("6. Search by Price Range\n");
+    printf("Enter your choice: ");
+    scanf("%d", &criteria_choice);
+
+    switch (criteria_choice) {
+        case 1: {
+            int car_id;
+            printf("Enter Car ID: ");
+            scanf("%d", &car_id);
+            snprintf(query, sizeof(query), 
+                     "SELECT * FROM cars WHERE car_id = %d;", car_id);
+            break;
+        }
+        case 2: {
+            char brand[30];
+            printf("Enter Brand: ");
+            scanf(" %29[^\n]", brand);
+            snprintf(query, sizeof(query), 
+                     "SELECT * FROM cars WHERE brand = '%s';", brand);
+            break;
+        }
+        case 3: {
+            char model[60];
+            printf("Enter Model: ");
+            scanf(" %59[^\n]", model);
+            snprintf(query, sizeof(query), 
+                     "SELECT * FROM cars WHERE model = '%s';", model);
+            break;
+        }
+        case 4: {
+            char color[30];
+            printf("Enter Color: ");
+            scanf(" %29[^\n]", color);
+            snprintf(query, sizeof(query), 
+                     "SELECT * FROM cars WHERE color = '%s';", color);
+            break;
+        }
+        case 5: {
+            int year_start, year_end;
+            printf("Enter start year: ");
+            scanf("%d", &year_start);
+            printf("Enter end year: ");
+            scanf("%d", &year_end);
+            snprintf(query, sizeof(query), 
+                     "SELECT * FROM cars WHERE year_of_production BETWEEN %d AND %d;", 
+                     year_start, year_end);
+            break;
+        }
+        case 6: {
+            double price_min, price_max;
+            printf("Enter minimum price: ");
+            scanf("%lf", &price_min);
+            printf("Enter maximum price: ");
+            scanf("%lf", &price_max);
+            snprintf(query, sizeof(query), 
+                     "SELECT * FROM cars WHERE price BETWEEN %.2f AND %.2f;", 
+                     price_min, price_max);
+            break;
+        }
+        default:
+            printf("Invalid choice.\n");
+            return;
     }
 
-    PGresult* res = PQexec(conn, query);
+    // Wykonaj zapytanie i wyświetl wyniki
+    res = PQexec(conn, query);
 
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        fprintf(stderr, "Display car by criteria failed: %s", PQerrorMessage(conn));
+        fprintf(stderr, "Error executing query: %s", PQerrorMessage(conn));
         PQclear(res);
         return;
     }
 
-    if (PQntuples(res) == 0) {
-        printf("No cars found for %s = %s.\n", criteria, value);
+    // Wyświetlanie wyników
+    int rows = PQntuples(res);
+    if (rows == 0) {
+        printf("No results found.\n");
     } else {
-        for (int i = 0; i < PQntuples(res); i++) {
+        for (int i = 0; i < rows; i++) {
             printf("Car ID=%s, Brand=%s, Model=%s, Color=%s, Year=%s, Price=%s\n",
                    PQgetvalue(res, i, 0),
                    PQgetvalue(res, i, 1),
