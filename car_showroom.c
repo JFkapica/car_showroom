@@ -3,108 +3,13 @@
 #include <string.h>
 #include <libpq-fe.h>
 
-// Funkcja obsługująca błąd połączenia
-void exitOnError(PGconn* conn) {
-    fprintf(stderr, "Error: %s", PQerrorMessage(conn));
-    PQfinish(conn);
-    exit(1);
-}
-
-// Funkcja dodająca rekord do tabeli
-void addRecord(PGconn* conn, const char* name, int age) {
-    char query[256];
-    snprintf(query, sizeof(query), "INSERT INTO records (name, age) VALUES ('%s', %d);", name, age);
-    PGresult* res = PQexec(conn, query);
-
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        fprintf(stderr, "Add record failed: %s", PQerrorMessage(conn));
-    } else {
-        printf("Record added: Name=%s, Age=%d\n", name, age);
-    }
-    PQclear(res);
-}
-
-// Funkcja wyświetlająca wszystkie rekordy
-void displayRecords(PGconn* conn) {
-    PGresult* res = PQexec(conn, "SELECT id, name, age FROM records ORDER BY id;");
-    
-    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        fprintf(stderr, "Display records failed: %s", PQerrorMessage(conn));
-        PQclear(res);
-        return;
-    }
-
-    printf("Current records:\n");
-    for (int i = 0; i < PQntuples(res); i++) {
-        printf("ID=%s, Name=%s, Age=%s\n",
-               PQgetvalue(res, i, 0),
-               PQgetvalue(res, i, 1),
-               PQgetvalue(res, i, 2));
-    }
-    PQclear(res);
-}
-
-// Funkcja wyświetlająca rekord według kryteriów (id lub name)
-void displayRecordByCriteria(PGconn* conn, const char* criteria, const char* value) {
-    char query[256];
-
-    if (strcmp(criteria, "id") == 0) {
-        snprintf(query, sizeof(query), "SELECT id, name, age FROM records WHERE id = %s;", value);
-    } else if (strcmp(criteria, "name") == 0) {
-        snprintf(query, sizeof(query), "SELECT id, name, age FROM records WHERE name = '%s';", value);
-    } else {
-        printf("Invalid criteria. Use 'id' or 'name'.\n");
-        return;
-    }
-
-    PGresult* res = PQexec(conn, query);
-    
-    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        fprintf(stderr, "Display record by criteria failed: %s", PQerrorMessage(conn));
-        PQclear(res);
-        return;
-    }
-
-    if (PQntuples(res) == 0) {
-        printf("No records found for %s = %s.\n", criteria, value);
-    } else {
-        for (int i = 0; i < PQntuples(res); i++) {
-            printf("ID=%s, Name=%s, Age=%s\n",
-                   PQgetvalue(res, i, 0),
-                   PQgetvalue(res, i, 1),
-                   PQgetvalue(res, i, 2));
-        }
-    }
-    PQclear(res);
-}
-
-// Funkcja modyfikująca rekord
-void modifyRecord(PGconn* conn, int id, const char* newName, int newAge) {
-    char query[256];
-    snprintf(query, sizeof(query), "UPDATE records SET name='%s', age=%d WHERE id=%d;", newName, newAge, id);
-    PGresult* res = PQexec(conn, query);
-
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        fprintf(stderr, "Modify record failed: %s", PQerrorMessage(conn));
-    } else {
-        printf("Record modified: ID=%d, New Name=%s, New Age=%d\n", id, newName, newAge);
-    }
-    PQclear(res);
-}
-
-// Funkcja usuwająca rekord
-void deleteRecord(PGconn* conn, int id) {
-    char query[256];
-    snprintf(query, sizeof(query), "DELETE FROM records WHERE id=%d;", id);
-    PGresult* res = PQexec(conn, query);
-
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        fprintf(stderr, "Delete record failed: %s", PQerrorMessage(conn));
-    } else {
-        printf("Record with ID=%d deleted.\n", id);
-    }
-    PQclear(res);
-}
+// Deklaracje funkcji
+void exitOnError(PGconn* conn);
+void addCar(PGconn* conn, const char* brand, const char* model, const char* color, int year_of_production, double price);
+void displayAllCars(PGconn* conn);
+void displayCarByCriteria(PGconn* conn, const char* criteria, const char* value);
+void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newModel, const char* newColor, int newYear, double newPrice);
+void deleteCar(PGconn* conn, int car_id);
 
 int main() {
     // Połączenie z bazą danych
@@ -114,57 +19,69 @@ int main() {
         exitOnError(conn);
     }
 
-    int choice, id, age;
-    char name[50];
-    char criteria[10];
-    char value[50];
+    int choice, car_id, year_of_production;
+    double price;
+    char brand[30], model[60], color[30];
+    char criteria[20], value[60];
 
     while (1) {
-        printf("\nCRUD Menu:\n");
-        printf("1. Add Record\n");
-        printf("2. Display All Records\n");
-        printf("3. Display Record by Criteria (ID or Name)\n");
-        printf("4. Modify Record\n");
-        printf("5. Delete Record\n");
+        printf("\nCar Database CRUD Menu:\n");
+        printf("1. Add Car\n");
+        printf("2. Display All Cars\n");
+        printf("3. Display Car by Criteria (Car ID or Brand)\n");
+        printf("4. Modify Car\n");
+        printf("5. Delete Car\n");
         printf("6. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
             case 1:
-                printf("Enter Name: ");
-                scanf(" %49[^\n]", name);
-                printf("Enter Age: ");
-                scanf("%d", &age);
-                addRecord(conn, name, age);
+                printf("Enter Brand: ");
+                scanf(" %29[^\n]", brand);
+                printf("Enter Model: ");
+                scanf(" %59[^\n]", model);
+                printf("Enter Color: ");
+                scanf(" %29[^\n]", color);
+                printf("Enter Year of Production: ");
+                scanf("%d", &year_of_production);
+                printf("Enter Price: ");
+                scanf("%lf", &price);
+                addCar(conn, brand, model, color, year_of_production, price);
                 break;
 
             case 2:
-                displayRecords(conn);
+                displayAllCars(conn);
                 break;
 
             case 3:
-                printf("Enter search criteria (id/name): ");
+                printf("Enter search criteria (car_id/brand): ");
                 scanf("%s", criteria);
                 printf("Enter value: ");
                 scanf("%s", value);
-                displayRecordByCriteria(conn, criteria, value);
+                displayCarByCriteria(conn, criteria, value);
                 break;
 
             case 4:
-                printf("Enter ID of the record to modify: ");
-                scanf("%d", &id);
-                printf("Enter New Name: ");
-                scanf(" %49[^\n]", name);
-                printf("Enter New Age: ");
-                scanf("%d", &age);
-                modifyRecord(conn, id, name, age);
+                printf("Enter Car ID of the car to modify: ");
+                scanf("%d", &car_id);
+                printf("Enter New Brand: ");
+                scanf(" %29[^\n]", brand);
+                printf("Enter New Model: ");
+                scanf(" %59[^\n]", model);
+                printf("Enter New Color: ");
+                scanf(" %29[^\n]", color);
+                printf("Enter New Year of Production: ");
+                scanf("%d", &year_of_production);
+                printf("Enter New Price: ");
+                scanf("%lf", &price);
+                modifyCar(conn, car_id, brand, model, color, year_of_production, price);
                 break;
 
             case 5:
-                printf("Enter ID of the record to delete: ");
-                scanf("%d", &id);
-                deleteRecord(conn, id);
+                printf("Enter Car ID of the car to delete: ");
+                scanf("%d", &car_id);
+                deleteCar(conn, car_id);
                 break;
 
             case 6:
@@ -176,4 +93,115 @@ int main() {
                 printf("Invalid choice. Please try again.\n");
         }
     }
+}
+
+// Definicje funkcji
+
+void exitOnError(PGconn* conn) {
+    fprintf(stderr, "Error: %s", PQerrorMessage(conn));
+    PQfinish(conn);
+    exit(1);
+}
+
+void addCar(PGconn* conn, const char* brand, const char* model, const char* color, int year_of_production, double price) {
+    char query[512];
+    snprintf(query, sizeof(query),
+             "INSERT INTO cars (brand, model, color, year_of_production, price) VALUES ('%s', '%s', '%s', %d, %.2f);",
+             brand, model, color, year_of_production, price);
+    PGresult* res = PQexec(conn, query);
+
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+        fprintf(stderr, "Add car failed: %s", PQerrorMessage(conn));
+    } else {
+        printf("Car added: Brand=%s, Model=%s, Color=%s, Year=%d, Price=%.2f\n",
+               brand, model, color, year_of_production, price);
+    }
+    PQclear(res);
+}
+
+void displayAllCars(PGconn* conn) {
+    PGresult* res = PQexec(conn, "SELECT car_id, brand, model, color, year_of_production, price FROM cars ORDER BY car_id;");
+
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "Display all cars failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        return;
+    }
+
+    printf("Current cars:\n");
+    for (int i = 0; i < PQntuples(res); i++) {
+        printf("Car ID=%s, Brand=%s, Model=%s, Color=%s, Year=%s, Price=%s\n",
+               PQgetvalue(res, i, 0),
+               PQgetvalue(res, i, 1),
+               PQgetvalue(res, i, 2),
+               PQgetvalue(res, i, 3),
+               PQgetvalue(res, i, 4),
+               PQgetvalue(res, i, 5));
+    }
+    PQclear(res);
+}
+
+void displayCarByCriteria(PGconn* conn, const char* criteria, const char* value) {
+    char query[512];
+
+    if (strcmp(criteria, "car_id") == 0) {
+        snprintf(query, sizeof(query), "SELECT car_id, brand, model, color, year_of_production, price FROM cars WHERE car_id = %s;", value);
+    } else if (strcmp(criteria, "brand") == 0) {
+        snprintf(query, sizeof(query), "SELECT car_id, brand, model, color, year_of_production, price FROM cars WHERE brand = '%s';", value);
+    } else {
+        printf("Invalid criteria. Use 'car_id' or 'brand'.\n");
+        return;
+    }
+
+    PGresult* res = PQexec(conn, query);
+
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "Display car by criteria failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        return;
+    }
+
+    if (PQntuples(res) == 0) {
+        printf("No cars found for %s = %s.\n", criteria, value);
+    } else {
+        for (int i = 0; i < PQntuples(res); i++) {
+            printf("Car ID=%s, Brand=%s, Model=%s, Color=%s, Year=%s, Price=%s\n",
+                   PQgetvalue(res, i, 0),
+                   PQgetvalue(res, i, 1),
+                   PQgetvalue(res, i, 2),
+                   PQgetvalue(res, i, 3),
+                   PQgetvalue(res, i, 4),
+                   PQgetvalue(res, i, 5));
+        }
+    }
+    PQclear(res);
+}
+
+void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newModel, const char* newColor, int newYear, double newPrice) {
+    char query[512];
+    snprintf(query, sizeof(query),
+             "UPDATE cars SET brand='%s', model='%s', color='%s', year_of_production=%d, price=%.2f WHERE car_id=%d;",
+             newBrand, newModel, newColor, newYear, newPrice, car_id);
+    PGresult* res = PQexec(conn, query);
+
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+        fprintf(stderr, "Modify car failed: %s", PQerrorMessage(conn));
+    } else {
+        printf("Car modified: Car ID=%d, New Brand=%s, New Model=%s, New Color=%s, New Year=%d, New Price=%.2f\n",
+               car_id, newBrand, newModel, newColor, newYear, newPrice);
+    }
+    PQclear(res);
+}
+
+void deleteCar(PGconn* conn, int car_id) {
+    char query[256];
+    snprintf(query, sizeof(query), "DELETE FROM cars WHERE car_id=%d;", car_id);
+    PGresult* res = PQexec(conn, query);
+
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+        fprintf(stderr, "Delete car failed: %s", PQerrorMessage(conn));
+    } else {
+        printf("Car with Car ID=%d deleted.\n", car_id);
+    }
+    PQclear(res);
 }
