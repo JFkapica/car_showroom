@@ -1,14 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <stdbool.h>
+#include <time.h>
 #include <libpq-fe.h>
-
-void exitOnError(PGconn* conn);
-void addCar(PGconn* conn, const char* brand, const char* model, const char* color, int year_of_production, double price);
-void displayAllCars(PGconn* conn);
-void displayCarByCriteria(PGconn* conn);
-void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newModel, const char* newColor, int newYear, double newPrice);
-void deleteCar(PGconn* conn, int car_id);
 
 bool isValidYear(int year) {
     int currentYear;
@@ -18,6 +12,13 @@ bool isValidYear(int year) {
 
     return (year >= 1886 && year <= currentYear);
 }
+
+void exitOnError(PGconn* conn);
+void addCar(PGconn* conn, const char* brand, const char* model, const char* color, int year_of_production, double price);
+void displayAllCars(PGconn* conn);
+void displayCarByCriteria(PGconn* conn);
+void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newModel, const char* newColor, int newYear, double newPrice);
+void deleteCar(PGconn* conn, int car_id);
 
 
 int main() {
@@ -188,16 +189,9 @@ void displayCarByCriteria(PGconn* conn) {
         case 5: {
             int year_start, year_end;
             printf("Enter start year: ");
-            scanf("%d", &year_of_production);
-            if (!isValidYear(year_of_production)) {
-                printf("Invalid year of production. Please enter a year between 1886 and the current year.\n");
-                break;
-            }
+            scanf("%d", &year_start);
             printf("Enter end year: ");
-            if (!isValidYear(year_of_production)) {
-                printf("Invalid year of production. Please enter a year between 1886 and the current year.\n");
-                break;
-            }
+            scanf("%d", &year_end);
             snprintf(query, sizeof(query), 
                      "SELECT * FROM cars WHERE year_of_production BETWEEN %d AND %d;", 
                      year_start, year_end);
@@ -276,10 +270,7 @@ void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newMo
             break;
         case 4:
             printf("Enter New Year of Production: ");
-            if (!isValidYear(year_of_production)) {
-                printf("Invalid year of production. Please enter a year between 1886 and the current year.\n");
-                break;
-            }
+            scanf("%d", &newYear);
             snprintf(query, sizeof(query), "UPDATE cars SET year_of_production=%d WHERE car_id=%d;", newYear, car_id);
             break;
         case 5:
@@ -295,10 +286,7 @@ void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newMo
             printf("Enter New Color: ");
             scanf(" %29[^\n]", newColor);
             printf("Enter New Year of Production: ");
-            if (!isValidYear(year_of_production)) {
-                printf("Invalid year of production. Please enter a year between 1886 and the current year.\n");
-                break;
-            }
+            scanf("%d", &newYear);
             printf("Enter New Price: ");
             scanf("%lf", &newPrice);
             snprintf(query, sizeof(query),
