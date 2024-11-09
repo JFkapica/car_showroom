@@ -3,7 +3,6 @@
 #include <string.h>
 #include <libpq-fe.h>
 
-// Deklaracje funkcji
 void exitOnError(PGconn* conn);
 void addCar(PGconn* conn, const char* brand, const char* model, const char* color, int year_of_production, double price);
 void displayAllCars(PGconn* conn);
@@ -12,7 +11,6 @@ void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newMo
 void deleteCar(PGconn* conn, int car_id);
 
 int main() {
-    // Połączenie z bazą danych
     PGconn* conn = PQconnectdb("user=dbuser dbname=dbuser password=dbuser");
 
     if (PQstatus(conn) != CONNECTION_OK) {
@@ -61,16 +59,6 @@ int main() {
             case 4:
                 printf("Enter Car ID of the car to modify: ");
                 scanf("%d", &car_id);
-                printf("Enter New Brand: ");
-                scanf(" %29[^\n]", brand);
-                printf("Enter New Model: ");
-                scanf(" %59[^\n]", model);
-                printf("Enter New Color: ");
-                scanf(" %29[^\n]", color);
-                printf("Enter New Year of Production: ");
-                scanf("%d", &year_of_production);
-                printf("Enter New Price: ");
-                scanf("%lf", &price);
                 modifyCar(conn, car_id, brand, model, color, year_of_production, price);
                 break;
 
@@ -90,8 +78,6 @@ int main() {
         }
     }
 }
-
-// Definicje funkcji
 
 void exitOnError(PGconn* conn) {
     fprintf(stderr, "Error: %s", PQerrorMessage(conn));
@@ -212,7 +198,6 @@ void displayCarByCriteria(PGconn* conn) {
             return;
     }
 
-    // Wykonaj zapytanie i wyświetl wyniki
     res = PQexec(conn, query);
 
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -221,7 +206,6 @@ void displayCarByCriteria(PGconn* conn) {
         return;
     }
 
-    // Wyświetlanie wyników
     int rows = PQntuples(res);
     if (rows == 0) {
         printf("No results found.\n");
@@ -240,17 +224,71 @@ void displayCarByCriteria(PGconn* conn) {
 }
 
 void modifyCar(PGconn* conn, int car_id, const char* newBrand, const char* newModel, const char* newColor, int newYear, double newPrice) {
+    int choice;
     char query[512];
-    snprintf(query, sizeof(query),
-             "UPDATE cars SET brand='%s', model='%s', color='%s', year_of_production=%d, price=%.2f WHERE car_id=%d;",
-             newBrand, newModel, newColor, newYear, newPrice, car_id);
+
+    printf("\nModify Car Menu:\n");
+    printf("1. Modify Brand\n");
+    printf("2. Modify Model\n");
+    printf("3. Modify Color\n");
+    printf("4. Modify Year of Production\n");
+    printf("5. Modify Price\n");
+    printf("6. Modify All\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1:
+            printf("Enter New Brand: ");
+            scanf(" %29[^\n]", newBrand);
+            snprintf(query, sizeof(query), "UPDATE cars SET brand='%s' WHERE car_id=%d;", newBrand, car_id);
+            break;
+        case 2:
+            printf("Enter New Model: ");
+            scanf(" %59[^\n]", newModel);
+            snprintf(query, sizeof(query), "UPDATE cars SET model='%s' WHERE car_id=%d;", newModel, car_id);
+            break;
+        case 3:
+            printf("Enter New Color: ");
+            scanf(" %29[^\n]", newColor);
+            snprintf(query, sizeof(query), "UPDATE cars SET color='%s' WHERE car_id=%d;", newColor, car_id);
+            break;
+        case 4:
+            printf("Enter New Year of Production: ");
+            scanf("%d", &newYear);
+            snprintf(query, sizeof(query), "UPDATE cars SET year_of_production=%d WHERE car_id=%d;", newYear, car_id);
+            break;
+        case 5:
+            printf("Enter New Price: ");
+            scanf("%lf", &newPrice);
+            snprintf(query, sizeof(query), "UPDATE cars SET price=%.2f WHERE car_id=%d;", newPrice, car_id);
+            break;
+        case 6:
+            printf("Enter New Brand: ");
+            scanf(" %29[^\n]", newBrand);
+            printf("Enter New Model: ");
+            scanf(" %59[^\n]", newModel);
+            printf("Enter New Color: ");
+            scanf(" %29[^\n]", newColor);
+            printf("Enter New Year of Production: ");
+            scanf("%d", &newYear);
+            printf("Enter New Price: ");
+            scanf("%lf", &newPrice);
+            snprintf(query, sizeof(query),
+                     "UPDATE cars SET brand='%s', model='%s', color='%s', year_of_production=%d, price=%.2f WHERE car_id=%d;",
+                     newBrand, newModel, newColor, newYear, newPrice, car_id);
+            break;
+        default:
+            printf("Invalid choice.\n");
+            return;
+    }
+
     PGresult* res = PQexec(conn, query);
 
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         fprintf(stderr, "Modify car failed: %s", PQerrorMessage(conn));
     } else {
-        printf("Car modified: Car ID=%d, New Brand=%s, New Model=%s, New Color=%s, New Year=%d, New Price=%.2f\n",
-               car_id, newBrand, newModel, newColor, newYear, newPrice);
+        printf("Car modified: Car ID=%d\n", car_id);
     }
     PQclear(res);
 }
